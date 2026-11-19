@@ -1,0 +1,38 @@
+# Dependências
+node_modules/
+.npm-cache/
+
+# Build
+dist/
+
+# Cobertura
+coverage/
+
+# Playwright — Laboratório REST
+playwright-report/
+test-results/
+e2e-artifacts/
+
+# Playwright — Atividade
+playwright-report-atividade/
+test-results-atividade/
+e2e-artifacts-atividade/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
