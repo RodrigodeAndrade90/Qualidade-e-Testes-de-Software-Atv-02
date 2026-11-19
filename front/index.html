@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="https://www.cps.sp.gov.br/favicon.ico" />
+  <title>Central de requisições REST</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <h1 data-testid="page-title">Central REST<span>.</span></h1>
+    <p>Monte uma chamada, envie ao servidor e examine o retorno.</p>
+  </header>
+  <main>
+    <section class="panel">
+      <div class="section-title"><span class="step">01</span>
+        <h2 id="request-title">Envio</h2>
+      </div>
+      <label for="example">Ação</label><select id="example" data-testid="example"></select>
+      <p class="hint" id="example-hint"></p>
+      <form id="request-form">
+        <label for="base">URL inicial</label><input id="base" data-testid="base" type="url" required>
+        <div class="request-line">
+          <div><label for="method">Método</label><select id="method" data-testid="method" disabled>
+              <option>GET</option>
+              <option>POST</option>
+            </select></div>
+          <div><label for="path">Rota do recurso</label><input id="path" data-testid="path" value="/api/students"
+              required></div>
+        </div>
+        <label for="body">Conteúdo JSON</label><textarea id="body" data-testid="body" rows="7"
+          spellcheck="false"></textarea>
+        <p id="body-hint" class="hint">POST cadastra informações. GET consulta sem enviar conteúdo.</p>
+        <button id="send" data-testid="send" type="submit">Fazer envio →</button>
+      </form>
+      <h3 id="request-preview-title">Prévia do envio</h3>
+      <p class="hint">Confira método, URL e cabeçalhos definidos aqui. O navegador também pode incluir outros.</p>
+      <pre id="request-preview" data-testid="request-preview" role="region" tabindex="0"></pre>
+    </section>
+    <section id="response" data-testid="response" class="panel" aria-busy="false">
+      <div class="section-title"><span class="step">02</span>
+        <h2 id="response-title">Retorno</h2>
+      </div>
+      <div id="status" data-testid="status" class="status" role="status" data-state="idle">Pronto para receber o primeiro envio</div>
+      <p id="response-meta" class="hint">O retorno será mostrado nesta área.</p>
+      <h3 id="response-headers-title">Cabeçalhos recebidos</h3>
+      <p class="hint">Detalhes HTTP sobre formato, cache e servidor.</p>
+      <pre id="response-headers" data-testid="response-headers" role="region" tabindex="0">—</pre>
+      <h3 id="response-body-title">Conteúdo da resposta</h3>
+      <pre id="response-body" data-testid="response-body" role="region"
+        tabindex="0">Escolha uma opção ao lado para iniciar.</pre>
+    </section>
+  </main>
+</body>
+
+</html>
