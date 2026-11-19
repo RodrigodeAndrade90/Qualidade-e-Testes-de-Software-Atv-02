@@ -1,232 +1,274 @@
-# Aplicação de estudantes, disciplinas e matrículas — testes E2E
+# API de alunos, disciplinas e matrículas — automação E2E
 
-Projeto de ensino formado por uma API Express em TypeScript, PostgreSQL e uma
-interface web. Com ele é possível incluir estudantes e disciplinas e registrar
-matrículas. O **Laboratório REST** deixa escolher ações, editar rotas e corpos
-JSON e conferir as respostas HTTP.
+Projeto didático com uma API Express escrita em TypeScript, banco PostgreSQL e
+interfaces web. É possível cadastrar alunos e disciplinas e realizar
+matrículas. O **Laboratório REST** permite selecionar operações, editar rotas e
+corpos JSON e acompanhar as respostas HTTP.
 
-Os testes ponta a ponta usam **Playwright Test com TypeScript** para operar a
-interface em um navegador Chromium real.
+O repositório inclui duas suítes Playwright independentes: uma para a interface
+de cadastro de alunos proposta na Atividade 2 e outra para o Laboratório REST.
+As duas usam TypeScript e ambientes Docker isolados.
 
-A pasta **`atividade/`** traz uma segunda interface em HTML, CSS e JavaScript,
-voltada ao registro de estudantes pelos campos `ra` e `name`. Ela utiliza a
-mesma API e foi preparada para que os alunos desenvolvam a própria automação E2E.
+## Atividade 2 — testes E2E do cadastro de alunos
 
-## Escopo dos testes
+A suíte da atividade testa a interface em `atividade/`. Para instalá-la e
+executá-la, rode os comandos na raiz do projeto:
 
-Nos cenários que enviam chamadas, o caminho percorrido inclui navegador,
-interface, Nginx, API Express e PostgreSQL. A suíte também cobre ações locais da
-tela, como preparar o envio e impedir que um JSON inválido seja enviado.
+```sh
+npm ci
+npx playwright install chromium
+npm run test:e2e:atividade
+```
+
+Ao concluir sem falhas, o resultado esperado é **8 passed**.
+
+| Comando | O que faz |
+| --- | --- |
+| `npm run test:e2e:atividade` | Executa os cenários da atividade. |
+| `npm run test:e2e:atividade -- --headed` | Mantém o navegador visível durante os testes. |
+| `npm run test:e2e:atividade:report` | Abre o relatório HTML da execução. |
+
+A cobertura inclui listagem inicial, cadastro válido, atualização da tabela,
+limpeza do formulário, persistência após recarregar a página, campos
+obrigatórios, valores inválidos de RA e nome, RA duplicado e lista vazia.
+
+Os arquivos da suíte estão organizados assim:
+
+```text
+e2e-atividade/
+├── run.cjs           # coordena Docker e Playwright
+├── support.ts        # restaura o banco antes de cada cenário
+├── alunos.spec.ts    # define os casos E2E
+└── tsconfig.json
+compose.e2e.atividade.yml       # ambiente isolado (banco aula4_e2e_atividade)
+playwright.atividade.config.ts  # configuração do Playwright
+```
+
+A suíte do Laboratório REST, localizada em `e2e/`, permanece separada e pode
+ser executada com `npm run test:e2e`; ela apresenta **13 passed** quando todos
+os cenários passam.
+
+## Testes E2E do Laboratório REST
+
+Os testes usam **Playwright Test com TypeScript** para controlar a interface em
+um navegador Chromium real. Os cenários que enviam requisições percorrem o
+caminho completo — navegador, interface, Nginx, API Express e PostgreSQL. A
+suíte também verifica funções locais da tela, como montar uma requisição e
+impedir o envio de JSON inválido.
 
 ```text
 Playwright → navegador → interface web → Nginx → API Express → PostgreSQL
 ```
 
-Nesses cenários, os testes selecionam uma ação, preenchem os campos e clicam em
-“Fazer envio”. Depois conferem status, cabeçalhos e conteúdo apresentados e
-comparam o JSON da tela com o retorno HTTP. A API e o banco são usados de
-verdade; as respostas não são simuladas.
+Os testes escolhem operações, preenchem os campos e clicam em “Enviar
+requisição”. Em seguida, conferem o status, os headers e o corpo exibidos,
+comparando o JSON da interface com a resposta HTTP. A API e o banco usados são
+reais, sem mocks.
 
-A suíte possui **13 cenários**:
+A suíte contém **13 cenários**:
 
-| Grupo | Casos | Conferências |
+| Grupo | Casos | O que é verificado |
 | --- | --- | --- |
-| Inclusão pela tela | 1 | Seleção, preenchimento e clique por `send()`; status 201 e objeto retornado. |
-| Prévia do envio | 1 | Ação, método, rota, ativação do corpo e JSON preparado. |
-| Listagens | 3 | Dados iniciais de estudantes, disciplinas e matrículas. |
-| Consultas | 3 | Busca de um item existente de cada recurso. |
-| Fluxo completo | 1 | Inclusão de estudante e disciplina, matrícula e consultas depois da recarga. |
-| Erros HTTP | 3 | Exibição dos retornos 400, 404 e 409 com o formato JSON esperado. |
-| Validação local | 1 | O JSON malformado não gera chamada; a inclusão funciona após o ajuste. |
+| Cadastro pela interface | 1 | Seleção, preenchimento e clique via `send()`; status 201 e objeto do aluno na resposta. |
+| Preparação da requisição | 1 | Operação, método, caminho, habilitação do corpo e prévia do JSON. |
+| Listagens | 3 | Dados iniciais de alunos, disciplinas e matrículas. |
+| Buscas | 3 | Consulta de um registro inicial de cada recurso. |
+| Fluxo completo | 1 | Criação de aluno e disciplina, matrícula e consulta após recarregar a página. |
+| Erros HTTP | 3 | Exibição dos erros 400, 404 e 409 e do formato JSON correspondente. |
+| Validação local | 1 | JSON inválido não é enviado; após a correção, o cadastro funciona. |
 
-No fluxo completo, o teste utiliza o ID de disciplina recebido da API ao criar a
-matrícula. As consultas feitas após recarregar a página confirmam que os dados
-permanecem no servidor.
+No fluxo completo, o teste usa o ID da disciplina retornado pela API para criar
+a matrícula. Depois de recarregar a página, consulta os registros novamente
+para confirmar que continuam armazenados no servidor.
 
-## Rodar a suíte E2E
+### Requisitos e primeira execução
 
-É necessário ter:
+Você vai precisar de:
 
 - Node.js 24 e npm.
-- Docker em execução com suporte a contêineres Linux.
+- Docker em execução, com suporte a contêineres Linux.
 - Docker Compose compatível com `up --wait`.
-- Porta local `18080` livre.
+- Porta local `18080` disponível.
 
-Na **raiz do projeto**, instale as dependências e o navegador:
+Na **raiz do projeto**, instale as dependências e o Chromium:
 
 ```powershell
 npm ci
 npx playwright install chromium
 ```
 
-Em seguida, execute:
+Depois, execute a suíte:
 
 ```powershell
 npm run test:e2e
 ```
 
-Não é preciso iniciar a aplicação manualmente. O comando:
+Não é preciso iniciar a aplicação manualmente. O comando remove contêineres
+antigos do projeto Docker exclusivo `aula4-e2e`, constrói e inicia banco, API e
+frontend com `compose.e2e.yml`, aguarda os healthchecks (inclusive o acesso à
+API via Nginx), executa os testes em sequência no Chromium e salva os logs antes
+de encerrar os contêineres, mesmo se algum teste falhar.
 
-1. Remove contêineres remanescentes do projeto Docker exclusivo `aula4-e2e`.
-2. Monta e inicia banco, API e interface usando `compose.e2e.yml`.
-3. Espera os healthchecks, incluindo o acesso à API pelo Nginx.
-4. Executa os testes em sequência no Chromium.
-5. Guarda os logs dos serviços e encerra os contêineres, também em caso de falha.
+A instalação do navegador e a primeira construção das imagens podem levar mais
+tempo. Uma execução bem-sucedida termina com `13 passed`.
 
-Uma execução sem falhas termina com `13 passed`. A instalação do Chromium e a
-primeira criação das imagens Docker podem demorar mais.
+### Isolamento do banco e dos cenários
 
-### Banco isolado e dados iniciais
+O ambiente de testes utiliza o banco `aula4_e2e`, com armazenamento temporário
+e sem publicar a porta do PostgreSQL. `database/init.sql` cria as tabelas, e
+`database/seed.sql` insere os dados iniciais.
 
-O ambiente E2E usa a base `aula4_e2e`, com armazenamento temporário e sem
-publicar a porta do PostgreSQL. `database/init.sql` cria as tabelas e
-`database/seed.sql` inclui os registros de partida.
+Antes de cada cenário, a fixture de `e2e/support.ts` executa `TRUNCATE`, reinicia
+as sequências e carrega o seed novamente **somente no banco E2E do projeto
+Docker**. Assim, todos os cenários começam com os mesmos dados e podem rodar
+independentemente.
 
-Antes de cada caso, a fixture de `e2e/support.ts` executa `TRUNCATE`, reinicia
-as sequências e reaplica o seed **somente na base de testes do projeto Docker**.
-Assim, todos começam com os mesmos registros e funcionam independentemente.
+O Compose E2E define credenciais e portas próprias. Não usa os valores de
+`.env` nem monta o volume demonstrativo `aula4_database_data`. Os dados
+temporários são removidos junto com os contêineres.
 
-O Compose de testes define suas próprias credenciais e portas. Ele não lê os
-valores de `.env` nem monta o volume demonstrativo `aula4_database_data`. Ao
-remover os contêineres, os dados temporários também são descartados.
+A configuração usa um worker, sem paralelismo nem novas tentativas automáticas.
+Reserve o nome `aula4-e2e` e a porta `18080` para a suíte e não execute dois
+conjuntos de testes ao mesmo tempo.
 
-A configuração usa um worker, sem paralelismo ou tentativas automáticas
-adicionais. Reserve `aula4-e2e` e a porta `18080` para a suíte e evite duas
-execuções simultâneas.
+### Comandos úteis
 
-### Atalhos de execução
+Execute os comandos abaixo na raiz:
 
-Rode estes comandos na raiz do projeto:
-
-| Comando | Para que serve |
+| Comando | Finalidade |
 | --- | --- |
-| `npm run test:e2e` | Prepara o ambiente, executa os testes e remove os contêineres. |
-| `npm run test:e2e -- --headed` | Exibe o navegador durante a execução. |
-| `npm run test:e2e -- --grep "matrícula"` | Executa os casos cujos títulos correspondem ao filtro. |
-| `npm run test:e2e:list` | Lista os casos sem iniciar Docker nem rodar a suíte. |
+| `npm run test:e2e` | Prepara o ambiente, executa a suíte e encerra os contêineres. |
+| `npm run test:e2e -- --headed` | Exibe a janela do navegador durante os testes. |
+| `npm run test:e2e -- --grep "matricula"` | Filtra cenários pelo texto do título. |
+| `npm run test:e2e:list` | Lista os testes sem iniciar o Docker ou executá-los. |
 | `npm run test:e2e:typecheck` | Confere os tipos dos testes e da configuração. |
-| `npm run test:e2e:report` | Abre o relatório HTML mais recente. |
+| `npm run test:e2e:report` | Abre o relatório HTML da execução mais recente. |
 
-### Relatórios e investigação
+### Relatórios e diagnóstico
 
-Execute `npm run test:e2e:report` e abra o endereço mostrado no terminal. O
-servidor escolhe uma porta livre em `127.0.0.1`. Deixe o terminal aberto
-enquanto consulta o relatório e pressione **Ctrl+C** quando terminar. O comando
-de listagem usa apenas texto e conserva o relatório HTML da última execução.
+Rode `npm run test:e2e:report` e abra o endereço informado no terminal. O
+servidor escolhe automaticamente uma porta livre em `127.0.0.1`. Mantenha o
+terminal aberto enquanto consulta o relatório e pressione **Ctrl+C** para
+encerrar o servidor. O comando de listagem usa somente texto e preserva o HTML
+da última execução.
 
 | Caminho | Conteúdo |
 | --- | --- |
-| `playwright-report/index.html` | Relatório HTML organizado por cenário. |
-| `test-results/` | Capturas de tela e traces mantidos para falhas. |
-| `test-results/.last-run.json` | Situação da execução anterior e identificação dos casos que falharam. |
-| `e2e-artifacts/compose.log` | Logs do banco, da API e da interface. |
+| `playwright-report/index.html` | Relatório HTML detalhado por cenário. |
+| `test-results/` | Capturas de tela e traces mantidos quando há falhas. |
+| `test-results/.last-run.json` | Estado da última execução e identificação dos cenários com falha. |
+| `e2e-artifacts/compose.log` | Logs do banco, da API e do frontend. |
 
-Esses diretórios são gerados automaticamente e constam no `.gitignore`. Remova-os
-quando os resultados não forem mais úteis; serão recriados por execuções futuras
-que produzam esses artefatos. Apagar `playwright-report/` remove o relatório até
-que os testes sejam executados novamente.
+Essas pastas são geradas automaticamente e estão no `.gitignore`. Podem ser
+removidas quando os resultados não forem mais necessários; as próximas
+execuções que gerarem esses arquivos vão criá-las novamente. Se
+`playwright-report/` for apagada, o relatório só estará disponível outra vez
+depois de uma nova execução.
 
-O Playwright cria `test-results/`; `e2e/run.cjs` monta `e2e-artifacts/` e salva os
-logs antes de encerrar os contêineres. Se todos os casos passarem, é normal que
-`test-results/` tenha apenas `.last-run.json`, porque capturas e traces são
-guardados somente quando há falhas.
+O Playwright cria `test-results/`; `e2e/run.cjs` cria `e2e-artifacts/` para
+guardar os logs antes de desligar os contêineres. Quando todos os testes passam,
+é normal que `test-results/` contenha apenas `.last-run.json`, pois capturas e
+traces são preservados somente quando há falhas.
 
-O trace permite inspecionar as interações no navegador, as chamadas de rede e o
-estado da página. Abra um arquivo produzido por uma falha assim:
+Um trace permite examinar as ações no navegador, as requisições e o estado da
+página. Para abrir um trace produzido por uma falha, use:
 
 ```powershell
 npx playwright show-trace "caminho/para/trace.zip"
 ```
 
-Se o processo for encerrado à força e os contêineres permanecerem ativos, finalize
+Se o processo for encerrado à força e os contêineres continuarem ativos, remova
 o ambiente com:
 
 ```powershell
 docker compose -f compose.e2e.yml -p aula4-e2e down --remove-orphans
 ```
 
-## Estrutura da suíte
+### Organização dos testes
 
-O código dos testes e seus recursos de apoio ficam em `e2e/`. A pasta está na
-raiz porque os cenários verificam em conjunto a interface, a API e o banco. Essa
-é uma decisão de organização; `testDir: './e2e'` em `playwright.config.ts`
-determina onde o Playwright procura os testes.
+O código E2E e seus recursos de apoio ficam em `e2e/`, na raiz, pois os
+cenários verificam em conjunto a interface, a API e o banco. Essa disposição é
+uma escolha organizacional; `testDir: './e2e'` em `playwright.config.ts` define
+onde o Playwright procura os testes.
 
-| Arquivo | Função |
+| Arquivo | Responsabilidade |
 | --- | --- |
-| `e2e/laboratorio.spec.ts` | Cenários executados pelo navegador. |
-| `e2e/support.ts` | Limpeza do banco e auxiliar de envio pela interface. |
-| `e2e/run.cjs` | Prepara o ambiente, executa a suíte, salva logs e encerra serviços. |
-| `e2e/tsconfig.json` | Checagem de tipos dos testes. |
-| `playwright.config.ts` | Define Chromium, sequência, capturas e relatórios. |
-| `compose.e2e.yml` | Serviços isolados de banco, API e interface para a suíte. |
+| `e2e/laboratorio.spec.ts` | Cenários executados no navegador. |
+| `e2e/support.ts` | Restauração do banco e auxiliar de envio pela interface. |
+| `e2e/run.cjs` | Inicialização, execução, gravação de logs e encerramento. |
+| `e2e/tsconfig.json` | Verificação de tipos dos testes. |
+| `playwright.config.ts` | Chromium, sequência, capturas e relatórios. |
+| `compose.e2e.yml` | Banco, API e frontend isolados para os testes. |
 | `package.json` e `package-lock.json` da raiz | Scripts e dependências E2E. |
 
-### Acrescentar cenários
+### Como adicionar casos
 
-Inclua novos casos em `e2e/laboratorio.spec.ts` ou crie arquivos `*.spec.ts`
-na pasta `e2e/`. Importe `test` e `expect` de `./support` para aproveitar a
-limpeza automática do banco. `send()` escolhe a ação, preenche a tela, envia e
-confere o retorno.
+Inclua cenários em `e2e/laboratorio.spec.ts` ou em outros arquivos `*.spec.ts`
+dentro de `e2e/`. Importe `test` e `expect` de `./support` para usar a limpeza
+automática do banco. O auxiliar `send()` escolhe uma operação, envia a
+requisição pela interface e verifica o retorno.
 
-Use `getByTestId()` com os atributos `data-testid` e os códigos fixos das ações
-descritos em [front/README.md](front/README.md). Prepare no próprio cenário os
-registros necessários e use os IDs retornados pela API. Aguarde respostas e
-condições da página em vez de adicionar pausas fixas.
+Use `getByTestId()` com os atributos `data-testid` e os valores fixos das
+operações listados em [front/README.md](front/README.md). Crie no cenário os
+dados necessários e utilize os IDs devolvidos pela API. Aguarde respostas e
+condições da página em vez de usar pausas fixas.
 
-Atualmente, os testes se concentram nos fluxos do Laboratório REST. Não cobrem
-testes de carga, concorrência, outros navegadores nem todas as combinações de
-validação da API. O guia operacional da suíte está em [e2e/README.md](e2e/README.md).
+A cobertura atual prioriza os fluxos do Laboratório REST. Ela não inclui testes
+de carga, concorrência, outros navegadores ou todas as combinações de validação
+da API. O guia de execução está em [e2e/README.md](e2e/README.md).
 
-## Iniciar a aplicação manualmente
+## Executar a aplicação manualmente
 
-Na raiz, se `.env` ainda não existir, copie `.env.example` para `.env` e rode:
+Na raiz do projeto, copie `.env.example` para `.env` se o arquivo ainda não
+existir e inicie os serviços:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Com as portas definidas no arquivo de exemplo, use:
+Com as portas definidas no arquivo de exemplo, os endereços são:
 
 - Laboratório REST (`front/`): http://localhost:8080
-- Cadastro de estudantes (`atividade/`): http://localhost:8081
-- API de estudantes: http://localhost:3002/api/students
+- Cadastro de alunos (`atividade/`): http://localhost:8081
+- API de alunos: http://localhost:3002/api/students
 - PostgreSQL: localhost:5433
 
-Na primeira inicialização de um diretório de dados vazio, o banco aplica os
-scripts de `database/` e guarda os dados no volume `aula4_database_data`. Para
-parar a aplicação, execute `docker compose down`.
+Na primeira inicialização de um diretório de dados vazio, o banco executa os
+scripts de `database/` e persiste os registros no volume
+`aula4_database_data`. Para desligar os serviços, rode `docker compose down`.
 
-## Interface proposta para a atividade E2E
+## Interface da Atividade 2
 
-Ao abrir `atividade/`, a página consulta a lista de estudantes. O formulário
-envia RA e nome a `POST /api/students`; quando o cadastro dá certo, limpa os
-campos e busca a lista outra vez com `GET /api/students`, sem recarregar toda a
-página. A tela mostra validações, avisos de sucesso ou erro e o estado sem itens.
+A página em `atividade/` carrega os alunos ao abrir. O formulário envia RA e
+nome para `POST /api/students`. Quando o cadastro dá certo, limpa os campos e
+consulta novamente a lista com `GET /api/students`, sem recarregar a página. A
+tela também apresenta validações, mensagens de sucesso e erro e o estado de
+lista vazia.
 
-Para iniciar apenas essa interface e seus serviços, rode na raiz:
+Para iniciar somente essa interface e os serviços de que ela depende, rode na
+raiz:
 
 ```powershell
 docker compose up --build -d atividade
 ```
 
-Acesse http://localhost:8081, ou a porta indicada por `ATIVIDADE_PORT_HOST` no
-`.env`. O Nginx encaminha as chamadas `/api` à API. No modo manual, as duas
-interfaces compartilham o servidor e a base de dados.
+Acesse http://localhost:8081, ou a porta configurada por
+`ATIVIDADE_PORT_HOST` no `.env`. O Nginx encaminha as chamadas `/api` ao
+servidor. No ambiente manual, as duas interfaces compartilham a API e o banco.
 
-A atividade sugere testes para a listagem inicial, cadastro com atualização da
-tabela, persistência após recarga, campos inválidos, RA repetido e falhas da API.
-A página inclui labels acessíveis e atributos `data-testid` para encontrar os
-elementos.
+A proposta da atividade inclui testes para listagem inicial, cadastro com
+atualização da tabela, persistência após recarga, campos inválidos, RA duplicado
+e falhas da API. A página fornece labels acessíveis e atributos `data-testid`
+para localizar elementos.
 
-A suíte atual em `e2e/` e o ambiente `compose.e2e.yml` atendem ao Laboratório
-REST. Para exercitar a segunda interface, prepare uma configuração e um ambiente
-de testes com banco isolado. Consulte [atividade/README.md](atividade/README.md)
-para os comportamentos previstos e seletores disponíveis.
+A suíte `e2e/` e o ambiente `compose.e2e.yml` continuam voltados ao Laboratório
+REST. Para testar a interface da atividade, configure uma suíte e um ambiente
+com banco isolado. Os comportamentos esperados e seletores estão em
+[atividade/README.md](atividade/README.md).
 
-## Desenvolvimento da API
+## Desenvolver a API
 
-Na pasta `server`, use:
+Na pasta `server`, instale dependências, confira os tipos e compile:
 
 ```powershell
 npm ci
@@ -234,9 +276,10 @@ npm run typecheck
 npm run build
 ```
 
-Para executar a API localmente, ajuste as variáveis `DB_*` do `.env` para apontar
-para um PostgreSQL acessível pela máquina. Se usar o banco do Compose, configure
-`DB_HOST=127.0.0.1` e `DB_PORT=5433`. Rode `npm run dev` durante o desenvolvimento
-ou `npm start` depois da compilação.
+Para executar a API localmente, configure as variáveis `DB_*` do `.env` para
+usar um PostgreSQL acessível pela máquina. Com o banco iniciado pelo Compose,
+defina `DB_HOST=127.0.0.1` e `DB_PORT=5433`. Use `npm run dev` durante o
+desenvolvimento ou `npm start` depois de compilar.
 
-As dependências da raiz servem à automação E2E; as de `server/` são usadas pela API.
+As dependências na raiz são usadas pelos testes E2E; as dependências de
+`server/` pertencem à API.
